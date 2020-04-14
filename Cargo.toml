@@ -1,0 +1,23 @@
+[package]
+name = "hyperloglogplus"
+version = "0.1.0"
+authors = ["Tasos Bakogiannis <t.bakogiannis@gmail.com>"]
+edition = "2018"
+
+[features]
+# Specify this feature flag to run unit benchmarks
+# using the nightly compiler (requires `feature(test)`).
+bench-units = []
+
+[profile.release]
+debug = true
+
+[dev-dependencies]
+rand = "0.7"
+criterion = "0.3"
+
+[[bench]]
+name = "hyperloglog"
+harness = false
+
+[dependencies]

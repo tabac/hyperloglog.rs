@@ -1,0 +1,6 @@
+max_width = 80
+comment_width = 60
+binop_separator = "Back"
+match_block_trailing_comma = true
+struct_field_align_threshold = 20
+error_on_line_overflow = true
