@@ -2,11 +2,18 @@
 name = "hyperloglogplus"
 version = "0.1.0"
 authors = ["Tasos Bakogiannis <t.bakogiannis@gmail.com>"]
+description = "HyperLogLog implementations."
+homepage = "https://github.com/tabac/hyperloglog.rs"
+repository = "https://github.com/tabac/hyperloglog.rs"
+documentation = "https://github.com/tabac/hyperloglog.rs"
+readme = "README.md"
+license = "MIT"
+keywords = ["hyperloglog", "probabilistic", "sketch"]
 edition = "2018"
 
 [features]
-# Specify this feature flag to run unit benchmarks
-# using the nightly compiler (requires `feature(test)`).
+# Specify this feature flag to run also unit benchmarks
+# using the nightly compiler.
 bench-units = []
 
 [profile.release]
