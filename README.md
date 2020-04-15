@@ -12,7 +12,7 @@ The following implementations are provided:
 
 ## Usage
 
-Add this to `Cargo.toml`:
+Add to `Cargo.toml`:
 
 ```toml
 [dependencies]
@@ -35,6 +35,6 @@ assert_eq!(hllp.count().trunc() as u32, 2);
 
 ```
 
-## Evaluation
+## Experimental Evaluation
 
-Check `figures/` for further details and results from experimental evaluation.
+Check [here](results/) for figures and discussion on experimental results.
