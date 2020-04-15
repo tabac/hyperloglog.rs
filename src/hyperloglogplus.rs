@@ -36,7 +36,7 @@ use crate::HyperLogLogError;
 ///
 pub struct HyperLogLogPlus<H, B>
 where
-    H: Hash,
+    H: Hash + ?Sized,
     B: BuildHasher,
 {
     builder:   B,
@@ -50,7 +50,7 @@ where
 
 impl<H, B> HyperLogLogPlus<H, B>
 where
-    H: Hash,
+    H: Hash + ?Sized,
     B: BuildHasher,
 {
     // Minimum precision allowed.
@@ -94,7 +94,7 @@ where
         other: &HyperLogLogPlus<S, T>,
     ) -> Result<(), HyperLogLogError>
     where
-        S: Hash,
+        S: Hash + ?Sized,
         T: BuildHasher,
     {
         if self.precision != other.precision() {
@@ -318,19 +318,17 @@ where
 
     // Returns an estimated bias correction based on empirical data.
     fn estimate_bias(&self, raw: f64) -> f64 {
-        // Get size of estimates/biases for precision.
-        let size = constants::DATA_SIZES[(self.precision - 4) as usize];
-
         // Get a reference to raw estimates/biases for precision.
-        let biases = &constants::BIAS_DATA[(self.precision - 4) as usize];
-        let estimates =
-            &constants::RAW_ESTIMATE_DATA[(self.precision - 4) as usize];
+        let biases = &constants::BIAS_DATA
+            [(self.precision - Self::MIN_PRECISION) as usize];
+        let estimates = &constants::RAW_ESTIMATE_DATA
+            [(self.precision - Self::MIN_PRECISION) as usize];
 
         // Raw estimate is first/last in estimates. Return the first/last bias.
         if raw <= estimates[0] {
             return biases[0];
-        } else if estimates[size - 1] <= raw {
-            return biases[size - 1];
+        } else if estimates[estimates.len() - 1] <= raw {
+            return biases[biases.len() - 1];
         }
 
         // Raw estimate is somewhere in between estimates.
@@ -338,8 +336,8 @@ where
         //
         // Here we unwrap because neither the values in `estimates`
         // nor `raw` are going to be NaN.
-        let res = estimates[..size]
-            .binary_search_by(|est| est.partial_cmp(&raw).unwrap());
+        let res =
+            estimates.binary_search_by(|est| est.partial_cmp(&raw).unwrap());
 
         let (prv, idx) = match res {
             Ok(idx) => (idx - 1, idx),
@@ -379,14 +377,14 @@ where
 
 impl<H, B> HyperLogLogCommon for HyperLogLogPlus<H, B>
 where
-    H: Hash,
+    H: Hash + ?Sized,
     B: BuildHasher,
 {
 }
 
 impl<H, B> HyperLogLog<H> for HyperLogLogPlus<H, B>
 where
-    H: Hash,
+    H: Hash + ?Sized,
     B: BuildHasher,
 {
     /// Adds a new value to the multiset.

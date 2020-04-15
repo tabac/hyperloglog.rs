@@ -29,7 +29,7 @@ use crate::HyperLogLogError;
 ///
 pub struct HyperLogLogPF<H, B>
 where
-    H: Hash,
+    H: Hash + ?Sized,
     B: BuildHasher,
 {
     builder:   B,
@@ -41,7 +41,7 @@ where
 
 impl<H, B> HyperLogLogPF<H, B>
 where
-    H: Hash,
+    H: Hash + ?Sized,
     B: BuildHasher,
 {
     // Minimum precision allowed.
@@ -76,7 +76,7 @@ where
         other: &HyperLogLogPF<S, T>,
     ) -> Result<(), HyperLogLogError>
     where
-        S: Hash,
+        S: Hash + ?Sized,
         T: BuildHasher,
     {
         if self.precision != other.precision() {
@@ -105,14 +105,14 @@ where
 
 impl<H, B> HyperLogLogCommon for HyperLogLogPF<H, B>
 where
-    H: Hash,
+    H: Hash + ?Sized,
     B: BuildHasher,
 {
 }
 
 impl<H, B> HyperLogLog<H> for HyperLogLogPF<H, B>
 where
-    H: Hash,
+    H: Hash + ?Sized,
     B: BuildHasher,
 {
     /// Adds a new value to the multiset.

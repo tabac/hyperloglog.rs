@@ -29,7 +29,7 @@ pub use crate::hyperloglog::HyperLogLogPF;
 pub use crate::hyperloglogplus::HyperLogLogPlus;
 
 /// A trait that should be implemented by any HyperLogLog variant.
-pub trait HyperLogLog<H: Hash> {
+pub trait HyperLogLog<H: Hash + ?Sized> {
     /// Adds a new value to the multiset.
     fn add(&mut self, value: &H);
     /// Estimates the cardinality of the multiset.
