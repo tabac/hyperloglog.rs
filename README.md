@@ -1,6 +1,6 @@
 # HyperLogLog
 
-HyperLogLog is an probabilistic algorithm for estimating the number of
+HyperLogLog is a probabilistic algorithm for estimating the number of
 *distinct* elements (*cardinality*) of a multiset. Several variations of the
 original algorithm, described by P. Flajolet et al., have been proposed.
 
