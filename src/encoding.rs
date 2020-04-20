@@ -10,9 +10,9 @@ pub struct DifIntVec {
     // The count of numbers stored.
     count: usize,
     // The last number inserted.
-    last: u32,
+    last:  u32,
     // The inner Varint encoded vector.
-    buf: VarIntVec,
+    buf:   VarIntVec,
 }
 
 pub struct VarIntVecIntoIter<'a> {
@@ -22,7 +22,7 @@ pub struct VarIntVecIntoIter<'a> {
 
 pub struct DifIntVecIntoIter<'a> {
     index: usize,
-    last: u32,
+    last:  u32,
     inner: &'a DifIntVec,
 }
 
@@ -77,16 +77,16 @@ impl DifIntVec {
     pub fn new() -> Self {
         DifIntVec {
             count: 0,
-            last: 0,
-            buf: VarIntVec::new(),
+            last:  0,
+            buf:   VarIntVec::new(),
         }
     }
 
     pub fn with_capacity(cap: usize) -> Self {
         DifIntVec {
             count: 0,
-            last: 0,
-            buf: VarIntVec::with_capacity(cap),
+            last:  0,
+            buf:   VarIntVec::with_capacity(cap),
         }
     }
 
@@ -134,7 +134,7 @@ impl<'a> IntoIterator for &'a DifIntVec {
     fn into_iter(self) -> Self::IntoIter {
         DifIntVecIntoIter {
             index: 0,
-            last: 0,
+            last:  0,
             inner: self,
         }
     }

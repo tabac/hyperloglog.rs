@@ -1,5 +1,9 @@
 # HyperLogLog
 
+[![Build status](https://github.com/tabac/hyperloglog.rs/workflows/ci/badge.svg)](https://github.com/tabac/hyperloglog.rs/actions)
+[![Crates.io](https://img.shields.io/crates/v/hyperloglogplus.svg)](https://crates.io/crates/hyperloglogplus)
+[![Documentation](https://docs.rs/hyperloglogplus/badge.svg)](https://docs.rs/hyperloglogplus)
+
 HyperLogLog is a probabilistic algorithm for estimating the number of
 *distinct* elements (*cardinality*) of a multiset. Several variations of the
 original algorithm, described by P. Flajolet et al., have been proposed.

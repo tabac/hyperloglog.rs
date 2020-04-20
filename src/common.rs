@@ -8,7 +8,7 @@ macro_rules! registers_impls {
         #[derive(Debug)]
         pub struct $ident {
             // A buffer containing registers.
-            buf: Vec<u32>,
+            buf:   Vec<u32>,
             // The number of registers stored in buf.
             count: usize,
         }
@@ -24,7 +24,7 @@ macro_rules! registers_impls {
             // Creates a new Registers struct with capacity `count` registers.
             pub fn with_count(count: usize) -> $ident {
                 $ident {
-                    buf: vec![0; ceil(count, Self::COUNT_PER_WORD)],
+                    buf:   vec![0; ceil(count, Self::COUNT_PER_WORD)],
                     count: count,
                 }
             }
