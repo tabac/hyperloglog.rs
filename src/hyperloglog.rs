@@ -1,6 +1,8 @@
 use std::hash::{BuildHasher, Hash, Hasher};
 use std::marker::PhantomData;
 
+use serde::{Deserialize, Serialize};
+
 use crate::common::*;
 use crate::HyperLogLog;
 use crate::HyperLogLogError;
@@ -27,6 +29,7 @@ use crate::HyperLogLogError;
 /// assert_eq!(hll.count().trunc() as u32, 2);
 /// ```
 ///
+#[derive(Serialize, Deserialize)]
 pub struct HyperLogLogPF<H, B>
 where
     H: Hash + ?Sized,
@@ -183,6 +186,7 @@ mod tests {
         }
     }
 
+    #[derive(Serialize, Deserialize)]
     struct PassThroughHasherBuilder;
 
     impl BuildHasher for PassThroughHasherBuilder {
@@ -193,6 +197,7 @@ mod tests {
         }
     }
 
+    #[derive(Serialize, Deserialize)]
     struct DefaultBuildHasher;
 
     impl BuildHasher for DefaultBuildHasher {
@@ -318,6 +323,57 @@ mod tests {
         assert_eq!(hll.registers.get(4), 6);
         assert_eq!(hll.registers.get(5), 7);
         assert_eq!(hll.registers.get(6), 8);
+    }
+
+    #[test]
+    fn test_serialization() {
+        let builder = PassThroughHasherBuilder {};
+
+        let mut hll: HyperLogLogPF<u64, PassThroughHasherBuilder> =
+            HyperLogLogPF::new(16, builder).unwrap();
+
+        hll.add(&0x0000000000010fff);
+        hll.add(&0x0000000000020fff);
+        hll.add(&0x0000000000030fff);
+        hll.add(&0x0000000000040fff);
+        hll.add(&0x0000000000050fff);
+        hll.add(&0x0000000000050fff);
+
+        assert_eq!(hll.count().trunc() as usize, 5);
+
+        let serialized = serde_json::to_string(&hll).unwrap();
+
+        let mut deserialized: HyperLogLogPF<u64, PassThroughHasherBuilder> =
+            serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(deserialized.count().trunc() as usize, 5);
+
+        deserialized.add(&0x0000000000060fff);
+
+        assert_eq!(deserialized.count().trunc() as usize, 6);
+
+        let mut hll: HyperLogLogPF<u64, DefaultBuildHasher> =
+            HyperLogLogPF::new(16, DefaultBuildHasher {}).unwrap();
+
+        hll.add(&0x0000000000010fff);
+        hll.add(&0x0000000000020fff);
+        hll.add(&0x0000000000030fff);
+        hll.add(&0x0000000000040fff);
+        hll.add(&0x0000000000050fff);
+        hll.add(&0x0000000000050fff);
+
+        assert_eq!(hll.count().trunc() as usize, 5);
+
+        let serialized = serde_json::to_string(&hll).unwrap();
+
+        let mut deserialized: HyperLogLogPF<u64, PassThroughHasherBuilder> =
+            serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(deserialized.count().trunc() as usize, 5);
+
+        deserialized.add(&0x0000000000060fff);
+
+        assert_eq!(deserialized.count().trunc() as usize, 6);
     }
 
     #[cfg(feature = "bench-units")]

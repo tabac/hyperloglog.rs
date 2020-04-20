@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 // A macro to create `Registers` structs for different Register sizes.
 macro_rules! registers_impls {
     ($len:expr, $ident:ident) => {
@@ -5,7 +7,7 @@ macro_rules! registers_impls {
         //
         // Contains a `count` and a number of fixed size registers
         // packed into `u32` integers.
-        #[derive(Debug)]
+        #[derive(Serialize, Deserialize, Debug)]
         pub struct $ident {
             // A buffer containing registers.
             buf:   Vec<u32>,
