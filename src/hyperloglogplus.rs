@@ -2,6 +2,8 @@ use std::collections::HashSet;
 use std::hash::{BuildHasher, Hash, Hasher};
 use std::marker::PhantomData;
 
+use serde::{Deserialize, Serialize};
+
 use crate::common::*;
 use crate::constants;
 use crate::encoding::DifIntVec;
@@ -15,9 +17,13 @@ use crate::HyperLogLogError;
 /// *HyperLogLog in Practice: Algorithmic Engineering of a State of The Art
 /// Cardinality Estimation Algorithm.*
 ///
-/// The empirical data used for bias estimation are those provided by Google
-/// and can be found [here](http://goo.gl/iU8Ig).
-///
+/// - Uses 6-bit registers, packed in a 32-bit unsigned integer. Thus, every
+///   five registers 2 bits are not used.
+/// - In small cardinalities, a sparse representation is used which allows
+///   for higher precision in estimations.
+/// - Performs bias correction using the empirical data provided by Google
+///   (can be found [here](http://goo.gl/iU8Ig)).
+/// - Supports serialization/deserialization through `serde`.
 ///
 /// # Examples
 ///
@@ -34,6 +40,19 @@ use crate::HyperLogLogError;
 /// assert_eq!(hllp.count().trunc() as u32, 2);
 /// ```
 ///
+/// # References
+///
+/// - ["HyperLogLog: the analysis of a near-optimal cardinality estimation
+///   algorithm", Philippe Flajolet, Éric Fusy, Olivier Gandouet and Frédéric
+///   Meunier.](http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf)
+/// - ["HyperLogLog in Practice: Algorithmic Engineering of a State of The Art
+///   Cardinality Estimation Algorithm", Stefan Heule, Marc Nunkesser and
+///   Alexander Hall.](https://research.google/pubs/pub40671/)
+/// - ["Appendix to HyperLogLog in Practice: Algorithmic Engineering of a State
+///   of the Art Cardinality Estimation Algorithm", Stefan Heule, Marc
+///   Nunkesser and Alexander Hall.](https://goo.gl/iU8Ig)
+///
+#[derive(Serialize, Deserialize, Debug)]
 pub struct HyperLogLogPlus<H, B>
 where
     H: Hash + ?Sized,
@@ -499,6 +518,7 @@ mod tests {
         }
     }
 
+    #[derive(Serialize, Deserialize)]
     struct PassThroughHasherBuilder;
 
     impl BuildHasher for PassThroughHasherBuilder {
@@ -509,6 +529,7 @@ mod tests {
         }
     }
 
+    #[derive(Serialize, Deserialize)]
     struct DefaultBuildHasher;
 
     impl BuildHasher for DefaultBuildHasher {
@@ -1076,6 +1097,49 @@ mod tests {
         assert_eq!(hll.count().trunc() as u64, 5);
 
         assert!(!hll.is_sparse() && !other.is_sparse());
+    }
+
+    #[test]
+    fn test_serialization() {
+        let builder = PassThroughHasherBuilder {};
+
+        let mut hll: HyperLogLogPlus<u64, PassThroughHasherBuilder> =
+            HyperLogLogPlus::new(16, builder).unwrap();
+
+        hll.add(&0x00010fffffffffff);
+        hll.add(&0x00020fffffffffff);
+        hll.add(&0x00030fffffffffff);
+        hll.add(&0x00040fffffffffff);
+        hll.add(&0x00050fffffffffff);
+        hll.add(&0x00050fffffffffff);
+
+        assert_eq!(hll.count().trunc() as usize, 5);
+
+        let serialized = serde_json::to_string(&hll).unwrap();
+
+        let mut deserialized: HyperLogLogPlus<u64, PassThroughHasherBuilder> =
+            serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(deserialized.count().trunc() as usize, 5);
+
+        deserialized.add(&0x00060fffffffffff);
+
+        assert_eq!(deserialized.count().trunc() as usize, 6);
+
+        hll.sparse_to_normal();
+
+        assert_eq!(hll.count().trunc() as usize, 5);
+
+        let serialized = serde_json::to_string(&hll).unwrap();
+
+        let mut deserialized: HyperLogLogPlus<u64, PassThroughHasherBuilder> =
+            serde_json::from_str(&serialized).unwrap();
+
+        assert_eq!(deserialized.count().trunc() as usize, 5);
+
+        deserialized.add(&0x00060fffffffffff);
+
+        assert_eq!(deserialized.count().trunc() as usize, 6);
     }
 
     #[cfg(feature = "bench-units")]

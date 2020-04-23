@@ -1,4 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 // A Vector of bytes containing variable length encoded unsigned integers.
+#[derive(Serialize, Deserialize, Debug)]
 pub struct VarIntVec(Vec<u8>);
 
 // A Vector containing difference encoded unsigned integers
@@ -6,6 +9,7 @@ pub struct VarIntVec(Vec<u8>);
 //
 // Numbers stored are assumed to be in increasing order, hence the
 // difference between a new number and `last` will always be positive.
+#[derive(Serialize, Deserialize, Debug)]
 pub struct DifIntVec {
     // The count of numbers stored.
     count: usize,
