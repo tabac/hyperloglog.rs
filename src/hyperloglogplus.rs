@@ -17,9 +17,13 @@ use crate::HyperLogLogError;
 /// *HyperLogLog in Practice: Algorithmic Engineering of a State of The Art
 /// Cardinality Estimation Algorithm.*
 ///
-/// The empirical data used for bias estimation are those provided by Google
-/// and can be found [here](http://goo.gl/iU8Ig).
-///
+/// - Uses 6-bit registers, packed in a 32-bit unsigned integer. Thus, every
+///   five registers 2 bits are not used.
+/// - In small cardinalities, a sparse representation is used which allows
+///   for higher precision in estimations.
+/// - Performs bias correction using the empirical data provided by Google
+///   (can be found [here](http://goo.gl/iU8Ig)).
+/// - Supports serialization/deserialization through `serde`.
 ///
 /// # Examples
 ///
@@ -35,6 +39,18 @@ use crate::HyperLogLogError;
 ///
 /// assert_eq!(hllp.count().trunc() as u32, 2);
 /// ```
+///
+/// # References
+///
+/// - ["HyperLogLog: the analysis of a near-optimal cardinality estimation
+///   algorithm", Philippe Flajolet, Éric Fusy, Olivier Gandouet and Frédéric
+///   Meunier.](http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf)
+/// - ["HyperLogLog in Practice: Algorithmic Engineering of a State of The Art
+///   Cardinality Estimation Algorithm", Stefan Heule, Marc Nunkesser and
+///   Alexander Hall.](https://research.google/pubs/pub40671/)
+/// - ["Appendix to HyperLogLog in Practice: Algorithmic Engineering of a State
+///   of the Art Cardinality Estimation Algorithm", Stefan Heule, Marc
+///   Nunkesser and Alexander Hall.](https://goo.gl/iU8Ig)
 ///
 #[derive(Serialize, Deserialize, Debug)]
 pub struct HyperLogLogPlus<H, B>

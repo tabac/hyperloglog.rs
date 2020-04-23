@@ -9,10 +9,14 @@ use crate::HyperLogLogError;
 
 /// Implements the original HyperLogLog algorithm for cardinality estimation.
 ///
-/// This implementation is based on the original paper of P. Flajolet et al.
+/// This implementation is based on the original paper of P. Flajolet et al:
 ///
 /// *HyperLogLog: the analysis of a near-optimal cardinality estimation
 /// algorithm.*
+///
+/// - Uses 5-bit registers, packed in a 32-bit unsigned integer. Thus, every
+///   six registers 2 bits are not used.
+/// - Supports serialization/deserialization through `serde`.
 ///
 /// # Examples
 ///
@@ -28,6 +32,12 @@ use crate::HyperLogLogError;
 ///
 /// assert_eq!(hll.count().trunc() as u32, 2);
 /// ```
+///
+/// # References
+///
+/// - ["HyperLogLog: the analysis of a near-optimal cardinality estimation
+///   algorithm", Philippe Flajolet, Éric Fusy, Olivier Gandouet and Frédéric
+///   Meunier.](http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf)
 ///
 #[derive(Serialize, Deserialize)]
 pub struct HyperLogLogPF<H, B>
