@@ -39,6 +39,6 @@ assert_eq!(hllp.count().trunc() as u32, 2);
 
 ```
 
-## Experimental Evaluation
+## Evaluation
 
-Check [here](results/) for figures and discussion on experimental results.
+[Here](results/) you can find figures and discussion on experimental evaluation.

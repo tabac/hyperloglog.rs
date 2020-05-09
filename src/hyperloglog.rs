@@ -39,7 +39,7 @@ use crate::HyperLogLogError;
 ///   algorithm", Philippe Flajolet, Éric Fusy, Olivier Gandouet and Frédéric
 ///   Meunier.](http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf)
 ///
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct HyperLogLogPF<H, B>
 where
     H: Hash + ?Sized,

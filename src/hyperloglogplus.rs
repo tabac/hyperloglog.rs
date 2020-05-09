@@ -52,7 +52,7 @@ use crate::HyperLogLogError;
 ///   of the Art Cardinality Estimation Algorithm", Stefan Heule, Marc
 ///   Nunkesser and Alexander Hall.](https://goo.gl/iU8Ig)
 ///
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct HyperLogLogPlus<H, B>
 where
     H: Hash + ?Sized,

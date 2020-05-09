@@ -7,7 +7,7 @@ macro_rules! registers_impls {
         //
         // Contains a `count` and a number of fixed size registers
         // packed into `u32` integers.
-        #[derive(Serialize, Deserialize, Debug)]
+        #[derive(Clone, Debug, Serialize, Deserialize)]
         pub struct $ident {
             // A buffer containing registers.
             buf:   Vec<u32>,
