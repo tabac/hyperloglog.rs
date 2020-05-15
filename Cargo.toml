@@ -1,6 +1,6 @@
 [package]
 name = "hyperloglogplus"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Tasos Bakogiannis <t.bakogiannis@gmail.com>"]
 description = "HyperLogLog implementations."
 homepage = "https://github.com/tabac/hyperloglog.rs"
@@ -8,7 +8,7 @@ repository = "https://github.com/tabac/hyperloglog.rs"
 documentation = "https://docs.rs/hyperloglogplus"
 readme = "README.md"
 license = "MIT"
-keywords = ["hyperloglog", "hyperloglog++", "probabilistic", "sketch"]
+keywords = ["hyperloglog", "hyperloglogplus", "probabilistic", "sketch"]
 edition = "2018"
 exclude = ["evaluation/*"]
 
