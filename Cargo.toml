@@ -8,9 +8,9 @@ repository = "https://github.com/tabac/hyperloglog.rs"
 documentation = "https://docs.rs/hyperloglogplus"
 readme = "README.md"
 license = "MIT"
-keywords = ["hyperloglog", "probabilistic", "sketch"]
+keywords = ["hyperloglog", "hyperloglog++", "probabilistic", "sketch"]
 edition = "2018"
-exclude = ["results/*"]
+exclude = ["evaluation/*"]
 
 [features]
 # Specify this feature flag to run also unit benchmarks

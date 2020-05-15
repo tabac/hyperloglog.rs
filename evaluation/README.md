@@ -1,4 +1,4 @@
-# Experimental Evaluation
+# Evaluation
 
 In order to verify the accuracy of the HyperLogLog implementations we performed
 two experiments. 
@@ -35,3 +35,6 @@ allows us to perform estimations with much higher precision.
 <a name="hyperloglogplus-figure-1"></a>
 ![hyperloglogplus-figure-1](figures/hyperloglogplus1e9.png "Relative Error: Cardinality < 1e9")
 
+## Usage
+
+To reproduce the results follow the steps in [exp.py](./exp.py).

@@ -48,7 +48,7 @@ fn bench_add(c: &mut Criterion) {
     bench_impls!["hyperloglogplus_add_p16", HyperLogLogPlus, 16];
 }
 
-fn bench_hyperloglog_count(c: &mut Criterion) {
+fn bench_count(c: &mut Criterion) {
     let workload = generate_strings(49200);
 
     macro_rules! bench_impls {
@@ -78,6 +78,6 @@ fn bench_hyperloglog_count(c: &mut Criterion) {
     bench_impls!["hyperloglogplus_count_p16", HyperLogLogPlus, 16];
 }
 
-criterion_group!(benches, bench_add, bench_hyperloglog_count);
+criterion_group!(benches, bench_add, bench_count);
 
 criterion_main!(benches);

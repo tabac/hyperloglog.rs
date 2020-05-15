@@ -24,8 +24,7 @@ use crate::HyperLogLogError;
 /// use std::collections::hash_map::RandomState;
 /// use hyperloglogplus::{HyperLogLog, HyperLogLogPF};
 ///
-/// let mut hll: HyperLogLogPF<u64, RandomState> =
-///     HyperLogLogPF::new(16, RandomState::new()).unwrap();
+/// let mut hll = HyperLogLogPF::new(16, RandomState::new()).unwrap();
 ///
 /// hll.add(&12345);
 /// hll.add(&23456);
@@ -39,7 +38,7 @@ use crate::HyperLogLogError;
 ///   algorithm", Philippe Flajolet, Éric Fusy, Olivier Gandouet and Frédéric
 ///   Meunier.](http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf)
 ///
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct HyperLogLogPF<H, B>
 where
     H: Hash + ?Sized,
