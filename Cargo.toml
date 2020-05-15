@@ -8,7 +8,7 @@ repository = "https://github.com/tabac/hyperloglog.rs"
 documentation = "https://docs.rs/hyperloglogplus"
 readme = "README.md"
 license = "MIT"
-keywords = ["hyperloglog", "hyperloglog++", "probabilistic", "sketch"]
+keywords = ["hyperloglog", "hyperloglogplus", "probabilistic", "sketch"]
 edition = "2018"
 exclude = ["evaluation/*"]
 
