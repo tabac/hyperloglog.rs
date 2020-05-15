@@ -31,8 +31,7 @@ use crate::HyperLogLogError;
 /// use std::collections::hash_map::RandomState;
 /// use hyperloglogplus::{HyperLogLog, HyperLogLogPlus};
 ///
-/// let mut hllp: HyperLogLogPlus<u64, RandomState> =
-///     HyperLogLogPlus::new(16, RandomState::new()).unwrap();
+/// let mut hllp = HyperLogLogPlus::new(16, RandomState::new()).unwrap();
 ///
 /// hllp.add(&12345);
 /// hllp.add(&23456);

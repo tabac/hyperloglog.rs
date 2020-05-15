@@ -29,8 +29,7 @@ A simple example using HyperLogLog++ implementation:
 use std::collections::hash_map::RandomState;
 use hyperloglogplus::{HyperLogLog, HyperLogLogPlus};
 
-let mut hllp: HyperLogLogPlus<u64, RandomState> =
-    HyperLogLogPlus::new(16, RandomState::new()).unwrap();
+let mut hllp = HyperLogLogPlus::new(16, RandomState::new()).unwrap();
 
 hllp.add(&12345);
 hllp.add(&23456);
@@ -41,4 +40,4 @@ assert_eq!(hllp.count().trunc() as u32, 2);
 
 ## Evaluation
 
-[Here](results/) you can find figures and discussion on experimental evaluation.
+[Here](evaluation/) you can find figures and discussion on experimental evaluation.

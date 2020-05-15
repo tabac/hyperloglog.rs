@@ -10,7 +10,7 @@ readme = "README.md"
 license = "MIT"
 keywords = ["hyperloglog", "hyperloglog++", "probabilistic", "sketch"]
 edition = "2018"
-exclude = ["results/*", "evaluation/*"]
+exclude = ["evaluation/*"]
 
 [features]
 # Specify this feature flag to run also unit benchmarks
