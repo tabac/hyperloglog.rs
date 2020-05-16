@@ -132,7 +132,7 @@ where
                 }
 
                 // Merge temporary set into sparse representation.
-                if self.tmpset.len() * 100 > self.counts.2 {
+                if self.tmpset.len() * 100 > 4 * self.counts.0 / 5 {
                     self.merge_sparse()
                 }
             } else {
@@ -329,7 +329,7 @@ where
 
         self.tmpset.clear();
 
-        if self.sparse.len() > self.counts.2 {
+        if self.sparse.len() > self.counts.0 {
             self.sparse_to_normal();
         }
     }
