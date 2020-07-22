@@ -8,15 +8,28 @@ on:
 
 jobs:
   test:
-    name: test (stable)
+    name: test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build:
+        - reference
+        - stable
+        - nightly
+        include:
+          - build: reference
+            rust: 1.40.0
+          - build: stable
+            rust: stable
+          - builde: nightly
+            rust: nightly
     steps:
       - name: checkout
         uses: actions/checkout@v2
       - name: install
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
       - name: build
