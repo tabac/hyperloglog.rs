@@ -13,6 +13,8 @@
 //!
 //! * [`HyperLogLogPF`]
 //! * [`HyperLogLogPlus`]
+//!
+//! Over and under.
 
 #![cfg_attr(feature = "bench-units", feature(test))]
 
