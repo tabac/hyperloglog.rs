@@ -145,17 +145,13 @@ where
                 for hash_code in other.tmpset.iter() {
                     let (zeros, index) = other.decode_hash(*hash_code);
 
-                    if registers.get(index) < zeros {
-                        registers.set(index, zeros);
-                    }
+                    registers.set_greater(index, zeros);
                 }
 
                 for hash_code in other.sparse.into_iter() {
                     let (zeros, index) = other.decode_hash(hash_code);
 
-                    if registers.get(index) < zeros {
-                        registers.set(index, zeros);
-                    }
+                    registers.set_greater(index, zeros);
                 }
             }
         } else {
@@ -176,9 +172,7 @@ where
             let other_registers_iter = other.registers_iter().unwrap();
 
             for (i, val) in other_registers_iter.enumerate() {
-                if registers.get(i) < val {
-                    registers.set(i, val);
-                }
+                registers.set_greater(i, val);
             }
         }
 
@@ -263,9 +257,7 @@ where
         for hash_code in self.sparse.into_iter() {
             let (zeros, index) = self.decode_hash(hash_code);
 
-            if zeros > registers.get(index) {
-                registers.set(index, zeros);
-            }
+            registers.set_greater(index, zeros);
         }
 
         self.registers = Some(registers);
@@ -428,9 +420,7 @@ where
                 let zeros: u32 = 1 + hash.leading_zeros();
 
                 // Update the register with the max leading zeros counts.
-                if zeros > registers.get(index) {
-                    registers.set(index, zeros);
-                }
+                registers.set_greater(index, zeros);
             },
             None => {
                 // We use sparse representation.
@@ -460,25 +450,42 @@ where
             Some(registers) => {
                 // We use normal representation.
 
-                // Calculate the raw estimate.
-                let (mut raw, zeros) =
-                    Self::estimate_raw(registers.iter(), self.counts.0);
-
-                // Apply correction if required.
-                if raw <= 5.0 * self.counts.0 as f64 {
-                    raw -= self.estimate_bias(raw);
-                }
+                let zeros = registers.zeros();
 
                 if zeros != 0 {
                     let correction = Self::linear_count(self.counts.0, zeros);
 
                     // Use linear counting only if value below threshold.
                     if correction <= Self::threshold(self.precision) {
-                        raw = correction;
-                    }
-                }
+                        correction
+                    } else {
+                        // Calculate the raw estimate.
+                        let mut raw = Self::estimate_raw_plus(
+                            registers.iter(),
+                            self.counts.0,
+                        );
 
-                raw
+                        // Apply correction if required.
+                        if raw <= 5.0 * self.counts.0 as f64 {
+                            raw -= self.estimate_bias(raw);
+                        }
+
+                        raw
+                    }
+                } else {
+                    // Calculate the raw estimate.
+                    let mut raw = Self::estimate_raw_plus(
+                        registers.iter(),
+                        self.counts.0,
+                    );
+
+                    // Apply correction if required.
+                    if raw <= 5.0 * self.counts.0 as f64 {
+                        raw -= self.estimate_bias(raw);
+                    }
+
+                    raw
+                }
             },
             None => {
                 // We use sparse representation.
