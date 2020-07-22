@@ -13,6 +13,8 @@ macro_rules! registers_impls {
             buf:   Vec<u32>,
             // The number of registers stored in buf.
             count: usize,
+            // The number of registers set to zero.
+            zeros: usize,
         }
 
         impl $ident {
@@ -28,6 +30,7 @@ macro_rules! registers_impls {
                 $ident {
                     buf:   vec![0; ceil(count, Self::COUNT_PER_WORD)],
                     count: count,
+                    zeros: count,
                 }
             }
 
@@ -45,6 +48,7 @@ macro_rules! registers_impls {
             }
 
             #[inline] // Returns the value of the Register at `index`.
+            #[allow(dead_code)]
             pub fn get(&self, index: usize) -> u32 {
                 let (qu, rm) = (
                     index / Self::COUNT_PER_WORD,
@@ -55,6 +59,7 @@ macro_rules! registers_impls {
             }
 
             #[inline] // Sets the value of the Register at `index` to `value`.
+            #[allow(dead_code)]
             pub fn set(&mut self, index: usize, value: u32) {
                 let (qu, rm) = (
                     index / Self::COUNT_PER_WORD,
@@ -65,6 +70,34 @@ macro_rules! registers_impls {
 
                 self.buf[qu] =
                     (self.buf[qu] & !mask) | (value << (rm * Self::SIZE));
+            }
+
+            #[inline] // Sets the value of the Register at `index` to `value`,
+                      // if `value` is greater than its current value.
+            pub fn set_greater(&mut self, index: usize, value: u32) {
+                let (qu, rm) = (
+                    index / Self::COUNT_PER_WORD,
+                    index % Self::COUNT_PER_WORD,
+                );
+
+                let cur = (self.buf[qu] >> (rm * Self::SIZE)) & Self::MASK;
+
+                if value > cur {
+                    if cur == 0 {
+                        self.zeros -= 1;
+                        self.buf[qu] |= (value << (rm * Self::SIZE));
+                    } else {
+                        let mask = Self::MASK << (rm * Self::SIZE);
+
+                        self.buf[qu] = (self.buf[qu] & !mask) |
+                            (value << (rm * Self::SIZE));
+                    }
+                }
+            }
+
+            #[inline]
+            pub fn zeros(&self) -> usize {
+                self.zeros
             }
 
             #[inline] // Returns the size of the Registers in bytes
@@ -105,6 +138,17 @@ pub trait HyperLogLogCommon {
         raw = Self::alpha(count) * (count * count) as f64 / raw;
 
         (raw, zeros)
+    }
+
+    #[inline] // Returns the "raw" HyperLogLog estimate as defined by
+              // P. Flajolet et al. for a given `precision`.
+    fn estimate_raw_plus<I>(registers: I, count: usize) -> f64
+    where
+        I: Iterator<Item = u32>,
+    {
+        let raw: f64 = registers.map(|val| 1.0 / (1u64 << val) as f64).sum();
+
+        Self::alpha(count) * (count * count) as f64 / raw
     }
 
     #[inline] // Estimates the count of distinct elements using linear
@@ -171,6 +215,40 @@ mod tests {
         registers.set(9, 0x7);
 
         assert_eq!(registers.buf, vec![0b11000000, 0x07000000]);
+    }
+
+    #[test]
+    fn test_registers_set_greater() {
+        let mut registers: RegistersPlus = RegistersPlus::with_count(10);
+
+        assert_eq!(registers.buf.len(), 2);
+
+        assert_eq!(registers.zeros(), 10);
+
+        registers.set_greater(1, 0);
+
+        assert_eq!(registers.buf, vec![0, 0]);
+        assert_eq!(registers.zeros(), 10);
+
+        registers.set_greater(1, 0b11);
+
+        assert_eq!(registers.buf, vec![0b11000000, 0]);
+        assert_eq!(registers.zeros(), 9);
+
+        registers.set_greater(9, 0x7);
+
+        assert_eq!(registers.buf, vec![0b11000000, 0x07000000]);
+        assert_eq!(registers.zeros(), 8);
+
+        registers.set_greater(1, 0b10);
+
+        assert_eq!(registers.buf, vec![0b11000000, 0x07000000]);
+        assert_eq!(registers.zeros(), 8);
+
+        registers.set_greater(9, 0x9);
+
+        assert_eq!(registers.buf, vec![0b11000000, 0x09000000]);
+        assert_eq!(registers.zeros(), 8);
     }
 
     #[test]
