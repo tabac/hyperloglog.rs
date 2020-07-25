@@ -117,6 +117,28 @@ registers_impls![5, Registers];
 // used by HyperLogLog++ implementation.
 registers_impls![6, RegistersPlus];
 
+// An array containing all possible values used to calculate
+// the "raw" sum.
+//
+// Instead of computing those values every time, look them up here.
+//
+// This is used only in the case the `const_loop` feature is supported
+// by the compiler (version > 1.45.0).
+#[cfg(feature = "const_loop")]
+const RAW: [f64; 1 << RegistersPlus::SIZE] = {
+    const COUNT: usize = 1 << RegistersPlus::SIZE;
+
+    let mut raw = [0.0; COUNT];
+
+    let mut i = 0;
+    while i < COUNT {
+        raw[i] = 1.0 / (1u64 << i) as f64;
+        i += 1;
+    }
+
+    raw
+};
+
 // A trait for sharing common HyperLogLog related functionality between
 // different HyperLogLog implementations.
 pub trait HyperLogLogCommon {
@@ -140,6 +162,7 @@ pub trait HyperLogLogCommon {
         (raw, zeros)
     }
 
+    #[cfg(not(feature = "const_loop"))]
     #[inline] // Returns the "raw" HyperLogLog estimate as defined by
               // P. Flajolet et al. for a given `precision`.
     fn estimate_raw_plus<I>(registers: I, count: usize) -> f64
@@ -147,6 +170,18 @@ pub trait HyperLogLogCommon {
         I: Iterator<Item = u32>,
     {
         let raw: f64 = registers.map(|val| 1.0 / (1u64 << val) as f64).sum();
+
+        Self::alpha(count) * (count * count) as f64 / raw
+    }
+
+    #[cfg(feature = "const_loop")]
+    #[inline] // Returns the "raw" HyperLogLog estimate as defined by
+              // P. Flajolet et al. for a given `precision`.
+    fn estimate_raw_plus<I>(registers: I, count: usize) -> f64
+    where
+        I: Iterator<Item = u32>,
+    {
+        let raw: f64 = registers.map(|val| RAW[val as usize]).sum();
 
         Self::alpha(count) * (count * count) as f64 / raw
     }
