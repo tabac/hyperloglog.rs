@@ -21,7 +21,6 @@ const-loop = []
 # Specify this feature flag to run also unit benchmarks
 # using the nightly compiler.
 bench-units = []
-const-loop = []
 
 [profile.release]
 debug = true
