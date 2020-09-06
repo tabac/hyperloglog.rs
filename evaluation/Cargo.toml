@@ -8,4 +8,4 @@ edition = "2018"
 rand = "0.7"
 clap = "3.0.0-beta.1"
 rayon = "1.1"
-hyperloglogplus = { path = ".." }
+hyperloglogplus = { path = "..", features = ["const-loop"] }
