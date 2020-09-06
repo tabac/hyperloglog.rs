@@ -4,9 +4,6 @@ use serde::{Deserialize, Serialize};
 macro_rules! registers_impls {
     ($len:expr, $ident:ident) => {
         // A Registers struct.
-        //
-        // Contains a `count` and a number of fixed size registers
-        // packed into `u32` integers.
         #[derive(Clone, Debug, Serialize, Deserialize)]
         pub struct $ident {
             // A buffer containing registers.
@@ -56,20 +53,6 @@ macro_rules! registers_impls {
                 );
 
                 (self.buf[qu] >> (rm * Self::SIZE)) & Self::MASK
-            }
-
-            #[inline] // Sets the value of the Register at `index` to `value`.
-            #[allow(dead_code)]
-            pub fn set(&mut self, index: usize, value: u32) {
-                let (qu, rm) = (
-                    index / Self::COUNT_PER_WORD,
-                    index % Self::COUNT_PER_WORD,
-                );
-
-                let mask = Self::MASK << (rm * Self::SIZE);
-
-                self.buf[qu] =
-                    (self.buf[qu] & !mask) | (value << (rm * Self::SIZE));
             }
 
             #[inline] // Sets the value of the Register at `index` to `value`,
@@ -243,11 +226,11 @@ mod tests {
 
         assert_eq!(registers.buf.len(), 2);
 
-        registers.set(1, 0b11);
+        registers.set_greater(1, 0b11);
 
         assert_eq!(registers.buf, vec![0b11000000, 0]);
 
-        registers.set(9, 0x7);
+        registers.set_greater(9, 0x7);
 
         assert_eq!(registers.buf, vec![0b11000000, 0x07000000]);
     }
