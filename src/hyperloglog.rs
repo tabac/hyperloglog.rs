@@ -96,9 +96,7 @@ where
         }
 
         for (i, val) in other.registers_iter().enumerate() {
-            if self.registers.get(i) < val {
-                self.registers.set(i, val);
-            }
+            self.registers.set_greater(i, val);
         }
 
         Ok(())
@@ -146,16 +144,16 @@ where
         let zeros: u32 = 1 + hash.leading_zeros();
 
         // Update the register with the max leading zeros counts.
-        if zeros > self.registers.get(index) {
-            self.registers.set(index, zeros);
-        }
+        self.registers.set_greater(index, zeros);
     }
 
     /// Estimates the cardinality of the multiset.
     fn count(&mut self) -> f64 {
         // Calculate the raw estimate.
-        let (mut raw, zeros) =
-            Self::estimate_raw(self.registers.iter(), self.count);
+        let (mut raw, zeros) = (
+            Self::estimate_raw_plus(self.registers.iter(), self.count),
+            self.registers.zeros(),
+        );
 
         let two32 = (1u64 << 32) as f64;
 

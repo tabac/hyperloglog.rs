@@ -103,7 +103,7 @@ fn bench_count(c: &mut Criterion) {
         "hyperloglogplus_count_p16_below_thres",
         HyperLogLogPlus,
         16,
-        50_000
+        49_000
     ];
     bench_impls![
         "hyperloglogplus_count_p16_above_thres",

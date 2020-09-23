@@ -1,6 +1,6 @@
 [package]
 name = "hyperloglogplus"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["Tasos Bakogiannis <t.bakogiannis@gmail.com>"]
 description = "HyperLogLog implementations."
 homepage = "https://github.com/tabac/hyperloglog.rs"
@@ -13,6 +13,11 @@ edition = "2018"
 exclude = ["evaluation/*"]
 
 [features]
+# Specify this feature flag to enable an optimization for `count()` that
+# is based on Rust's `const_loop` feature.
+# 
+# It requires a Rust compiler version 1.45.0 or higher.
+const-loop = []
 # Specify this feature flag to run also unit benchmarks
 # using the nightly compiler.
 bench-units = []

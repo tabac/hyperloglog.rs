@@ -23,6 +23,16 @@ Add to `Cargo.toml`:
 hyperloglogplus = "*"
 ```
 
+With Rust compiler version 1.45.0 or higher consider enabling the `const-loop`
+feature for better performance, see [here](https://github.com/tabac/hyperloglog.rs/pull/3) 
+for more details.
+
+```toml
+[dependencies]
+hyperloglogplus = { version = "*", features = ["const-loop"] }
+```
+
+
 A simple example using HyperLogLog++ implementation:
 
 ```rust
