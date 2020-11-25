@@ -311,7 +311,7 @@ mod tests {
 
             b.iter(|| {
                 for i in 0..1000 {
-                    registers.set(i, 123);
+                    registers.set_greater(i, 123);
                 }
             })
         }
