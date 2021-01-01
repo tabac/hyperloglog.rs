@@ -15,17 +15,30 @@
 //! * [`HyperLogLogPlus`]
 
 #![cfg_attr(feature = "bench-units", feature(test))]
+#![cfg_attr(not(feature = "std"), no_std)]
 
-use std::fmt;
-use std::hash::Hash;
+#[cfg(feature = "alloc")]
+extern crate alloc;
 
 mod common;
+#[cfg(feature = "std")]
 mod constants;
+#[cfg(feature = "std")]
 mod encoding;
 mod hyperloglog;
+#[cfg(feature = "std")]
 mod hyperloglogplus;
+#[cfg(not(feature = "std"))]
+mod log;
 
+use core::fmt;
+use core::hash::Hash;
+
+// Available also with no_std.
 pub use crate::hyperloglog::HyperLogLogPF;
+
+// Available only with std.
+#[cfg(feature = "std")]
 pub use crate::hyperloglogplus::HyperLogLogPlus;
 
 /// A trait that should be implemented by any HyperLogLog variant.
