@@ -13,16 +13,19 @@ jobs:
     strategy:
       matrix:
         build:
-        - reference
         - stable
         - nightly
         include:
           - build: reference
             rust: 1.40.0
+            features: ""
           - build: stable
             rust: stable
           - build: nightly
             rust: nightly
+        features:
+          - ""
+          - "const-loop"
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -36,12 +39,12 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --verbose
+          args: --verbose --features=${{ matrix.features }}
       - name: run tests
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose
+          args: --verbose --features=${{ matrix.features }}
 
   fmt:
     name: format
