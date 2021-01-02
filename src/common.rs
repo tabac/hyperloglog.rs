@@ -222,6 +222,21 @@ mod tests {
 
     #[test]
     fn test_registers_get_set() {
+        let mut registers: Registers = Registers::with_count(10);
+
+        assert_eq!(registers.buf.len(), 2);
+
+        registers.set_greater(1, 0b11);
+
+        assert_eq!(registers.buf, vec![0b1100000, 0]);
+
+        registers.set_greater(9, 0x7);
+
+        assert_eq!(registers.buf, vec![0b1100000, 0x038000]);
+    }
+
+    #[test]
+    fn test_registers_get_set_plus() {
         let mut registers: RegistersPlus = RegistersPlus::with_count(10);
 
         assert_eq!(registers.buf.len(), 2);
@@ -237,6 +252,40 @@ mod tests {
 
     #[test]
     fn test_registers_set_greater() {
+        let mut registers: Registers = Registers::with_count(10);
+
+        assert_eq!(registers.buf.len(), 2);
+
+        assert_eq!(registers.zeros(), 10);
+
+        registers.set_greater(1, 0);
+
+        assert_eq!(registers.buf, vec![0, 0]);
+        assert_eq!(registers.zeros(), 10);
+
+        registers.set_greater(1, 0b11);
+
+        assert_eq!(registers.buf, vec![0b1100000, 0]);
+        assert_eq!(registers.zeros(), 9);
+
+        registers.set_greater(9, 0x7);
+
+        assert_eq!(registers.buf, vec![0b1100000, 0x038000]);
+        assert_eq!(registers.zeros(), 8);
+
+        registers.set_greater(1, 0b10);
+
+        assert_eq!(registers.buf, vec![0b1100000, 0x038000]);
+        assert_eq!(registers.zeros(), 8);
+
+        registers.set_greater(9, 0x9);
+
+        assert_eq!(registers.buf, vec![0b1100000, 0x048000]);
+        assert_eq!(registers.zeros(), 8);
+    }
+
+    #[test]
+    fn test_registers_set_greater_plus() {
         let mut registers: RegistersPlus = RegistersPlus::with_count(10);
 
         assert_eq!(registers.buf.len(), 2);
