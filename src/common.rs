@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "alloc")]
+use alloc::{vec, vec::Vec};
+
 // A macro to create `Registers` structs for different Register sizes.
 macro_rules! registers_impls {
     ($len:expr, $ident:ident) => {
@@ -94,10 +97,15 @@ macro_rules! registers_impls {
 
 // Registers implementation for 5-bit registers,
 // used by HyperLogLog original implementation.
+//
+// Available also with no_std.
 registers_impls![5, Registers];
 
 // Registers implementation for 6-bit registers,
 // used by HyperLogLog++ implementation.
+//
+// Available only with std.
+#[cfg(feature = "std")]
 registers_impls![6, RegistersPlus];
 
 // An array containing all possible values used to calculate
@@ -107,20 +115,30 @@ registers_impls![6, RegistersPlus];
 //
 // This is used only in the case the `const-loop` feature is enabled,
 // it requires a Rust compiler version 1.45.0 or higher.
-#[cfg(feature = "const-loop")]
-const RAW: [f64; 1 << RegistersPlus::SIZE] = {
-    const COUNT: usize = 1 << RegistersPlus::SIZE;
+macro_rules! rawlut_impls {
+    ($ident:ident) => {
+        #[cfg(feature = "const-loop")]
+        const RAW: [f64; 1 << $ident::SIZE] = {
+            const COUNT: usize = 1 << $ident::SIZE;
 
-    let mut raw = [0.0; COUNT];
+            let mut raw = [0.0; COUNT];
 
-    let mut i = 0;
-    while i < COUNT {
-        raw[i] = 1.0 / (1u64 << i) as f64;
-        i += 1;
-    }
+            let mut i = 0;
+            while i < COUNT {
+                raw[i] = 1.0 / (1u64 << i) as f64;
+                i += 1;
+            }
 
-    raw
-};
+            raw
+        };
+    };
+}
+
+#[cfg(not(feature = "std"))]
+rawlut_impls![Registers];
+
+#[cfg(feature = "std")]
+rawlut_impls![RegistersPlus];
 
 // A trait for sharing common HyperLogLog related functionality between
 // different HyperLogLog implementations.
@@ -172,7 +190,7 @@ pub trait HyperLogLogCommon {
     #[inline] // Estimates the count of distinct elements using linear
               // counting.
     fn linear_count(count: usize, zeros: usize) -> f64 {
-        count as f64 * (count as f64 / zeros as f64).ln()
+        count as f64 * ln(count as f64 / zeros as f64)
     }
 
     #[inline] // Returns the alpha constant based on precision.
@@ -194,6 +212,18 @@ pub trait HyperLogLogCommon {
 #[inline] // Returns the int ceil of num, denom.
 pub fn ceil(num: usize, denom: usize) -> usize {
     (num + denom - 1) / denom
+}
+
+#[cfg(feature = "std")]
+#[inline]
+pub fn ln(x: f64) -> f64 {
+    x.ln()
+}
+
+#[cfg(not(feature = "std"))]
+#[inline]
+pub fn ln(x: f64) -> f64 {
+    crate::log::log(x)
 }
 
 // A trait for extracting a range of bits from a value.
@@ -235,6 +265,7 @@ mod tests {
         assert_eq!(registers.buf, vec![0b1100000, 0x038000]);
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_registers_get_set_plus() {
         let mut registers: RegistersPlus = RegistersPlus::with_count(10);
@@ -284,6 +315,7 @@ mod tests {
         assert_eq!(registers.zeros(), 8);
     }
 
+    #[cfg(feature = "std")]
     #[test]
     fn test_registers_set_greater_plus() {
         let mut registers: RegistersPlus = RegistersPlus::with_count(10);

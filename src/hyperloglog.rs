@@ -1,5 +1,5 @@
-use std::hash::{BuildHasher, Hash, Hasher};
-use std::marker::PhantomData;
+use core::hash::{BuildHasher, Hash, Hasher};
+use core::marker::PhantomData;
 
 use serde::{Deserialize, Serialize};
 
@@ -17,6 +17,7 @@ use crate::HyperLogLogError;
 /// - Uses 5-bit registers, packed in a 32-bit unsigned integer. Thus, every
 ///   six registers 2 bits are not used.
 /// - Supports serialization/deserialization through `serde`.
+/// - Compiles in a `no_std` environment using a global allocator.
 ///
 /// # Examples
 ///
@@ -162,7 +163,7 @@ where
             raw = Self::linear_count(self.count, zeros);
         } else if raw > two32 / 30.0 {
             // Apply large range correction.
-            raw = -1.0 * two32 * (1.0 - raw / two32).ln();
+            raw = -1.0 * two32 * ln(1.0 - raw / two32);
         }
 
         raw
@@ -173,8 +174,8 @@ where
 mod tests {
     use super::*;
 
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{BuildHasher, Hasher};
+    use core::hash::{BuildHasher, Hasher};
+    use siphasher::sip::SipHasher13;
 
     struct PassThroughHasher(u64);
 
@@ -208,10 +209,10 @@ mod tests {
     struct DefaultBuildHasher;
 
     impl BuildHasher for DefaultBuildHasher {
-        type Hasher = DefaultHasher;
+        type Hasher = SipHasher13;
 
         fn build_hasher(&self) -> Self::Hasher {
-            DefaultHasher::new()
+            SipHasher13::new()
         }
     }
 
