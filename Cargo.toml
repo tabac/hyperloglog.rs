@@ -1,6 +1,6 @@
 [package]
 name = "hyperloglogplus"
-version = "0.2.2"
+version = "0.3.0"
 authors = ["Tasos Bakogiannis <t.bakogiannis@gmail.com>"]
 description = "HyperLogLog implementations."
 homepage = "https://github.com/tabac/hyperloglog.rs"
@@ -9,6 +9,7 @@ documentation = "https://docs.rs/hyperloglogplus"
 readme = "README.md"
 license = "MIT"
 keywords = ["hyperloglog", "hyperloglogplus", "probabilistic", "sketch"]
+categories = ["data-structures", "algorithms", "no-std"]
 edition = "2018"
 exclude = ["evaluation/*"]
 
