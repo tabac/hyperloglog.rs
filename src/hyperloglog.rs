@@ -1,6 +1,8 @@
 use core::hash::{BuildHasher, Hash, Hasher};
 use core::marker::PhantomData;
 
+use std::borrow::Borrow;
+
 use serde::{Deserialize, Serialize};
 
 use crate::common::*;
@@ -25,7 +27,7 @@ use crate::HyperLogLogError;
 /// use std::collections::hash_map::RandomState;
 /// use hyperloglogplus::{HyperLogLog, HyperLogLogPF};
 ///
-/// let mut hll = HyperLogLogPF::new(16, RandomState::new()).unwrap();
+/// let mut hll = HyperLogLogPF::<u64, _>::new(16, RandomState::new()).unwrap();
 ///
 /// hll.add(&12345);
 /// hll.add(&23456);
@@ -127,7 +129,11 @@ where
     B: BuildHasher,
 {
     /// Adds a new value to the multiset.
-    fn add(&mut self, value: &H) {
+    fn add<Q>(&mut self, value: &Q)
+    where
+        H: Borrow<Q>,
+        Q: Hash + ?Sized,
+    {
         // Create a new hasher.
         let mut hasher = self.builder.build_hasher();
         // Calculate the hash.

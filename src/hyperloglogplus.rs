@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::hash::{BuildHasher, Hash, Hasher};
 use std::marker::PhantomData;
@@ -31,10 +32,10 @@ use crate::HyperLogLogError;
 /// use std::collections::hash_map::RandomState;
 /// use hyperloglogplus::{HyperLogLog, HyperLogLogPlus};
 ///
-/// let mut hllp = HyperLogLogPlus::new(16, RandomState::new()).unwrap();
+/// let mut hllp = HyperLogLogPlus::<u64, _>::new(16, RandomState::new()).unwrap();
 ///
-/// hllp.add(&12345);
-/// hllp.add(&23456);
+/// hllp.add(&12345u64);
+/// hllp.add(&23456u64);
 ///
 /// assert_eq!(hllp.count().trunc() as u32, 2);
 /// ```
@@ -398,7 +399,11 @@ where
     B: BuildHasher,
 {
     /// Adds a new value to the multiset.
-    fn add(&mut self, value: &H) {
+    fn add<Q>(&mut self, value: &Q)
+    where
+        H: Borrow<Q>,
+        Q: Hash + ?Sized,
+    {
         // Create a new hasher.
         let mut hasher = self.builder.build_hasher();
         // Calculate the hash.
