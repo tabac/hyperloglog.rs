@@ -86,7 +86,7 @@ macro_rules! run_impls {
                         args.values_of("input").unwrap().collect();
 
                     files.par_iter().for_each(|file| {
-                        let mut hll =
+                        let mut hll: $impl<$ty, _> =
                             $impl::new(precision, PassThroughHasherBuilder {})
                                 .unwrap();
 
@@ -96,7 +96,7 @@ macro_rules! run_impls {
                             .iter()
                             .enumerate()
                             .map(|(i, num)| {
-                                hll.add(&num);
+                                hll.insert(&num);
 
                                 Estimation(
                                     (i + 1) as u64,
@@ -126,7 +126,7 @@ macro_rules! run_impls {
                     let cardinalities = args.value_of("cardinalities").unwrap();
 
                     (0..runs).into_par_iter().for_each(|r| {
-                        let mut hll =
+                        let mut hll: $impl<$ty, _> =
                             $impl::new(precision, PassThroughHasherBuilder {})
                                 .unwrap();
 
@@ -142,7 +142,7 @@ macro_rules! run_impls {
                                 while c < *cardinality {
                                     let num = rng.gen::<$ty>();
 
-                                    hll.add(&num);
+                                    hll.insert(&num);
 
                                     c += 1;
                                 }

@@ -21,7 +21,7 @@ fn generate_strings(count: usize) -> Vec<String> {
     workload
 }
 
-fn bench_add(c: &mut Criterion) {
+fn bench_insert(c: &mut Criterion) {
     let workload = generate_strings(2000);
 
     macro_rules! bench_impls {
@@ -32,7 +32,7 @@ fn bench_add(c: &mut Criterion) {
                         $impl::new($precision, RandomState::new()).unwrap();
 
                     for val in &workload {
-                        hll.add(&val);
+                        hll.insert(val);
                     }
                 })
             });
@@ -57,7 +57,7 @@ fn bench_count(c: &mut Criterion) {
                 $impl::new($precision, RandomState::new()).unwrap();
 
             for val in &workload {
-                hll.add(&val);
+                hll.insert(val);
             }
 
             c.bench_function($testname, |b| {
@@ -113,6 +113,6 @@ fn bench_count(c: &mut Criterion) {
     ];
 }
 
-criterion_group!(benches, bench_add, bench_count);
+criterion_group!(benches, bench_insert, bench_count);
 
 criterion_main!(benches);

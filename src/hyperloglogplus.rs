@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::HashSet;
 use std::hash::{BuildHasher, Hash, Hasher};
 use std::marker::PhantomData;
@@ -31,10 +32,11 @@ use crate::HyperLogLogError;
 /// use std::collections::hash_map::RandomState;
 /// use hyperloglogplus::{HyperLogLog, HyperLogLogPlus};
 ///
-/// let mut hllp = HyperLogLogPlus::new(16, RandomState::new()).unwrap();
+/// let mut hllp: HyperLogLogPlus<u32, _> =
+///     HyperLogLogPlus::new(16, RandomState::new()).unwrap();
 ///
-/// hllp.add(&12345);
-/// hllp.add(&23456);
+/// hllp.insert(&12345);
+/// hllp.insert(&23456);
 ///
 /// assert_eq!(hllp.count().trunc() as u32, 2);
 /// ```
@@ -439,6 +441,52 @@ where
         }
     }
 
+    /// Inserts a new value to the multiset.
+    fn insert<Q>(&mut self, value: &Q)
+    where
+        H: Borrow<Q>,
+        Q: Hash + ?Sized,
+    {
+        // Create a new hasher.
+        let mut hasher = self.builder.build_hasher();
+        // Calculate the hash.
+        value.hash(&mut hasher);
+        // Use a 64-bit hash value.
+        let mut hash: u64 = hasher.finish();
+
+        match &mut self.registers {
+            Some(registers) => {
+                // We use normal representation.
+
+                // Calculate the register's index.
+                let index: usize = (hash >> (64 - self.precision)) as usize;
+
+                // Shift left the bits of the index.
+                hash = (hash << self.precision) | (1 << (self.precision - 1));
+
+                // Count leading zeros.
+                let zeros: u32 = 1 + hash.leading_zeros();
+
+                // Update the register with the max leading zeros counts.
+                registers.set_greater(index, zeros);
+            },
+            None => {
+                // We use sparse representation.
+
+                // Encode hash value.
+                let hash_code = self.encode_hash(hash);
+
+                // Insert hash_code into temporary set.
+                self.tmpset.insert(hash_code);
+
+                // Merge temporary set into sparse representation.
+                if self.tmpset.len() * 100 > self.counts.2 {
+                    self.merge_sparse()
+                }
+            },
+        }
+    }
+
     /// Estimates the cardinality of the multiset.
     fn count(&mut self) -> f64 {
         // Merge tmpset into sparse representation.
@@ -547,7 +595,7 @@ mod tests {
     }
 
     #[test]
-    fn test_normal_add() {
+    fn test_normal_insert() {
         let builder = PassThroughHasherBuilder {};
 
         let mut hll: HyperLogLogPlus<u64, PassThroughHasherBuilder> =
@@ -557,27 +605,27 @@ mod tests {
 
         assert!(hll.registers.is_some());
 
-        hll.add(&0x00010fffffffffff);
+        hll.insert(&0x00010fffffffffff);
 
         assert_eq!(hll.registers.as_ref().unwrap().get(1), 5);
 
-        hll.add(&0x0002ffffffffffff);
+        hll.insert(&0x0002ffffffffffff);
 
         assert_eq!(hll.registers.as_ref().unwrap().get(2), 1);
 
-        hll.add(&0x0003000000000000);
+        hll.insert(&0x0003000000000000);
 
         assert_eq!(hll.registers.as_ref().unwrap().get(3), 49);
 
-        hll.add(&0x0003000000000001);
+        hll.insert(&0x0003000000000001);
 
         assert_eq!(hll.registers.as_ref().unwrap().get(3), 49);
 
-        hll.add(&0xff03700000000000);
+        hll.insert(&0xff03700000000000);
 
         assert_eq!(hll.registers.as_ref().unwrap().get(0xff03), 2);
 
-        hll.add(&0xff03080000000000);
+        hll.insert(&0xff03080000000000);
 
         assert_eq!(hll.registers.as_ref().unwrap().get(0xff03), 5);
 
@@ -588,13 +636,13 @@ mod tests {
 
         hll.sparse_to_normal();
 
-        hll.add(&0x1fffffffffffffff);
+        hll.insert(&0x1fffffffffffffff);
         assert_eq!(hll.registers.as_ref().unwrap().get(1), 1);
 
-        hll.add(&0xffffffffffffffff);
+        hll.insert(&0xffffffffffffffff);
         assert_eq!(hll.registers.as_ref().unwrap().get(0xf), 1);
 
-        hll.add(&0x00ffffffffffffff);
+        hll.insert(&0x00ffffffffffffff);
         assert_eq!(hll.registers.as_ref().unwrap().get(0), 5);
     }
 
@@ -674,11 +722,11 @@ mod tests {
         ];
 
         // Insert a couple of hashes.
-        hll.add(&hashes[0]);
+        hll.insert(&hashes[0]);
 
         assert!(hll.tmpset.contains(&hash_codes[0]));
 
-        hll.add(&hashes[1]);
+        hll.insert(&hashes[1]);
 
         assert!(hll.tmpset.contains(&hash_codes[1]));
 
@@ -698,7 +746,7 @@ mod tests {
         assert_eq!(hll_hash_codes, vec![hash_codes[1], hash_codes[0]]);
 
         // Insert another hash.
-        hll.add(&hashes[2]);
+        hll.insert(&hashes[2]);
 
         assert!(hll.tmpset.contains(&hash_codes[2]));
 
@@ -727,11 +775,11 @@ mod tests {
         // We have 5 registers every 4 bytes
         // (1 << 7) * 4 / 5 = 102
         for i in 0u64..102 {
-            hll.add(&(i << 39));
+            hll.insert(&(i << 39));
             hll.count();
         }
 
-        hll.add(&1);
+        hll.insert(&1);
 
         assert!(hll.registers.is_none());
 
@@ -754,12 +802,12 @@ mod tests {
         // We have 5 registers every 4 bytes
         // (1 << 4) * 4 / 5 = 12
         for i in 0u64..12 {
-            hll.add(&(1 << i));
+            hll.insert(&(1 << i));
         }
 
         assert!(hll.registers.is_none());
 
-        hll.add(&(1 << 13));
+        hll.insert(&(1 << 13));
 
         assert!(hll.registers.is_some());
 
@@ -775,7 +823,7 @@ mod tests {
         let mut hll: HyperLogLogPlus<u64, PassThroughHasherBuilder> =
             HyperLogLogPlus::new(16, builder).unwrap();
 
-        hll.add(&0x00010fffffffffff);
+        hll.insert(&0x00010fffffffffff);
 
         assert_eq!(hll.count() as u64, 1);
 
@@ -792,12 +840,12 @@ mod tests {
         let mut hll: HyperLogLogPlus<u64, PassThroughHasherBuilder> =
             HyperLogLogPlus::new(16, builder).unwrap();
 
-        hll.add(&0x00010fffffffffff);
-        hll.add(&0x0002ffffffffffff);
-        hll.add(&0x0003000000000000);
-        hll.add(&0x0003000000000001);
-        hll.add(&0xff03700000000000);
-        hll.add(&0xff03080000000000);
+        hll.insert(&0x00010fffffffffff);
+        hll.insert(&0x0002ffffffffffff);
+        hll.insert(&0x0003000000000000);
+        hll.insert(&0x0003000000000001);
+        hll.insert(&0xff03700000000000);
+        hll.insert(&0xff03080000000000);
 
         hll.merge_sparse();
 
@@ -831,7 +879,7 @@ mod tests {
         ];
 
         for hash in &hashes {
-            hll.add(hash);
+            hll.insert(hash);
         }
 
         // Calls a merge_sparse().
@@ -907,7 +955,7 @@ mod tests {
         hll.sparse_to_normal();
 
         for i in 0u64..10 {
-            hll.add(&((i << 60) + 0xfffffffffffffff));
+            hll.insert(&((i << 60) + 0xfffffffffffffff));
         }
 
         assert!((10.0 - hll.count()).abs() < 1.0);
@@ -933,12 +981,12 @@ mod tests {
         let mut other: HyperLogLogPlus<u64, PassThroughHasherBuilder> =
             HyperLogLogPlus::new(16, PassThroughHasherBuilder {}).unwrap();
 
-        other.add(&0x00010fffffffffff);
-        other.add(&0x00020fffffffffff);
-        other.add(&0x00030fffffffffff);
-        other.add(&0x00040fffffffffff);
-        other.add(&0x00050fffffffffff);
-        other.add(&0x00050fffffffffff);
+        other.insert(&0x00010fffffffffff);
+        other.insert(&0x00020fffffffffff);
+        other.insert(&0x00030fffffffffff);
+        other.insert(&0x00040fffffffffff);
+        other.insert(&0x00050fffffffffff);
+        other.insert(&0x00050fffffffffff);
 
         assert_eq!(other.count().trunc() as u64, 5);
 
@@ -958,11 +1006,11 @@ mod tests {
 
         assert!(hll.is_sparse() && other.is_sparse());
 
-        other.add(&0x00060fffffffffff);
-        other.add(&0x00070fffffffffff);
-        other.add(&0x00080fffffffffff);
-        other.add(&0x00090fffffffffff);
-        other.add(&0x000a0fffffffffff);
+        other.insert(&0x00060fffffffffff);
+        other.insert(&0x00070fffffffffff);
+        other.insert(&0x00080fffffffffff);
+        other.insert(&0x00090fffffffffff);
+        other.insert(&0x000a0fffffffffff);
 
         assert_eq!(other.count().trunc() as u64, 10);
 
@@ -985,12 +1033,12 @@ mod tests {
         hll.sparse_to_normal();
         other.sparse_to_normal();
 
-        other.add(&0x00010fffffffffff);
-        other.add(&0x00020fffffffffff);
-        other.add(&0x00030fffffffffff);
-        other.add(&0x00040fffffffffff);
-        other.add(&0x00050fffffffffff);
-        other.add(&0x00050fffffffffff);
+        other.insert(&0x00010fffffffffff);
+        other.insert(&0x00020fffffffffff);
+        other.insert(&0x00030fffffffffff);
+        other.insert(&0x00040fffffffffff);
+        other.insert(&0x00050fffffffffff);
+        other.insert(&0x00050fffffffffff);
 
         assert_eq!(other.count().trunc() as u64, 5);
 
@@ -1010,11 +1058,11 @@ mod tests {
 
         assert!(!hll.is_sparse() && !other.is_sparse());
 
-        other.add(&0x00060fffffffffff);
-        other.add(&0x00070fffffffffff);
-        other.add(&0x00080fffffffffff);
-        other.add(&0x00090fffffffffff);
-        other.add(&0x000a0fffffffffff);
+        other.insert(&0x00060fffffffffff);
+        other.insert(&0x00070fffffffffff);
+        other.insert(&0x00080fffffffffff);
+        other.insert(&0x00090fffffffffff);
+        other.insert(&0x000a0fffffffffff);
 
         assert_eq!(other.count().trunc() as u64, 10);
 
@@ -1036,12 +1084,12 @@ mod tests {
 
         hll.sparse_to_normal();
 
-        other.add(&0x00010fffffffffff);
-        other.add(&0x00020fffffffffff);
-        other.add(&0x00030fffffffffff);
-        other.add(&0x00040fffffffffff);
-        other.add(&0x00050fffffffffff);
-        other.add(&0x00050fffffffffff);
+        other.insert(&0x00010fffffffffff);
+        other.insert(&0x00020fffffffffff);
+        other.insert(&0x00030fffffffffff);
+        other.insert(&0x00040fffffffffff);
+        other.insert(&0x00050fffffffffff);
+        other.insert(&0x00050fffffffffff);
 
         assert_eq!(other.count().trunc() as u64, 5);
 
@@ -1061,11 +1109,11 @@ mod tests {
 
         assert!(!hll.is_sparse() && other.is_sparse());
 
-        other.add(&0x00060fffffffffff);
-        other.add(&0x00070fffffffffff);
-        other.add(&0x00080fffffffffff);
-        other.add(&0x00090fffffffffff);
-        other.add(&0x000a0fffffffffff);
+        other.insert(&0x00060fffffffffff);
+        other.insert(&0x00070fffffffffff);
+        other.insert(&0x00080fffffffffff);
+        other.insert(&0x00090fffffffffff);
+        other.insert(&0x000a0fffffffffff);
 
         assert_eq!(other.count().trunc() as u64, 10);
 
@@ -1087,12 +1135,12 @@ mod tests {
 
         other.sparse_to_normal();
 
-        other.add(&0x00010fffffffffff);
-        other.add(&0x00020fffffffffff);
-        other.add(&0x00030fffffffffff);
-        other.add(&0x00040fffffffffff);
-        other.add(&0x00050fffffffffff);
-        other.add(&0x00050fffffffffff);
+        other.insert(&0x00010fffffffffff);
+        other.insert(&0x00020fffffffffff);
+        other.insert(&0x00030fffffffffff);
+        other.insert(&0x00040fffffffffff);
+        other.insert(&0x00050fffffffffff);
+        other.insert(&0x00050fffffffffff);
 
         assert_eq!(other.count().trunc() as u64, 5);
 
@@ -1112,12 +1160,12 @@ mod tests {
         let mut hll: HyperLogLogPlus<u64, PassThroughHasherBuilder> =
             HyperLogLogPlus::new(16, builder).unwrap();
 
-        hll.add(&0x00010fffffffffff);
-        hll.add(&0x00020fffffffffff);
-        hll.add(&0x00030fffffffffff);
-        hll.add(&0x00040fffffffffff);
-        hll.add(&0x00050fffffffffff);
-        hll.add(&0x00050fffffffffff);
+        hll.insert(&0x00010fffffffffff);
+        hll.insert(&0x00020fffffffffff);
+        hll.insert(&0x00030fffffffffff);
+        hll.insert(&0x00040fffffffffff);
+        hll.insert(&0x00050fffffffffff);
+        hll.insert(&0x00050fffffffffff);
 
         assert_eq!(hll.count().trunc() as usize, 5);
 
@@ -1128,7 +1176,7 @@ mod tests {
 
         assert_eq!(deserialized.count().trunc() as usize, 5);
 
-        deserialized.add(&0x00060fffffffffff);
+        deserialized.insert(&0x00060fffffffffff);
 
         assert_eq!(deserialized.count().trunc() as usize, 6);
 
@@ -1143,7 +1191,7 @@ mod tests {
 
         assert_eq!(deserialized.count().trunc() as usize, 5);
 
-        deserialized.add(&0x00060fffffffffff);
+        deserialized.insert(&0x00060fffffffffff);
 
         assert_eq!(deserialized.count().trunc() as usize, 6);
     }
@@ -1157,7 +1205,7 @@ mod tests {
         use test::{black_box, Bencher};
 
         #[bench]
-        fn bench_plus_add_normal(b: &mut Bencher) {
+        fn bench_plus_insert_normal(b: &mut Bencher) {
             let builder = PassThroughHasherBuilder {};
 
             let mut hll: HyperLogLogPlus<u64, PassThroughHasherBuilder> =
@@ -1167,13 +1215,13 @@ mod tests {
 
             b.iter(|| {
                 for i in 0u64..1000 {
-                    hll.add(&(u64::max_value() - i));
+                    hll.insert(&(u64::max_value() - i));
                 }
             })
         }
 
         #[bench]
-        fn bench_add_normal_with_hash(b: &mut Bencher) {
+        fn bench_insert_normal_with_hash(b: &mut Bencher) {
             let mut rng = rand::thread_rng();
 
             let workload: Vec<String> = (0..2000)
@@ -1189,7 +1237,7 @@ mod tests {
                 hll.sparse_to_normal();
 
                 for val in &workload {
-                    hll.add(&val);
+                    hll.insert(&val);
                 }
 
                 let val = hll.count();
@@ -1221,7 +1269,7 @@ mod tests {
                 HyperLogLogPlus::new(16, builder).unwrap();
 
             for i in 0u64..500 {
-                hll.add(&(i << 39));
+                hll.insert(&(i << 39));
             }
 
             assert_eq!(hll.tmpset.len(), 500);
