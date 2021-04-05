@@ -1,3 +1,4 @@
+use core::borrow::Borrow;
 use core::hash::{BuildHasher, Hash, Hasher};
 use core::marker::PhantomData;
 
@@ -25,10 +26,11 @@ use crate::HyperLogLogError;
 /// use std::collections::hash_map::RandomState;
 /// use hyperloglogplus::{HyperLogLog, HyperLogLogPF};
 ///
-/// let mut hll = HyperLogLogPF::new(16, RandomState::new()).unwrap();
+/// let mut hll: HyperLogLogPF<u32, _> =
+///     HyperLogLogPF::new(16, RandomState::new()).unwrap();
 ///
-/// hll.add(&12345);
-/// hll.add(&23456);
+/// hll.insert(&12345);
+/// hll.insert(&23456);
 ///
 /// assert_eq!(hll.count().trunc() as u32, 2);
 /// ```
@@ -103,6 +105,39 @@ where
         Ok(())
     }
 
+    /// Inserts a new value, of any type, to the multiset.
+    pub fn insert_any<R>(&mut self, value: &R)
+    where
+        R: Hash + ?Sized,
+    {
+        self.insert_impl(value);
+    }
+
+    #[inline(always)] // Inserts a new value to the multiset.
+    fn insert_impl<R>(&mut self, value: &R)
+    where
+        R: Hash + ?Sized,
+    {
+        // Create a new hasher.
+        let mut hasher = self.builder.build_hasher();
+        // Calculate the hash.
+        value.hash(&mut hasher);
+        // Drops the higher 32 bits.
+        let mut hash: u32 = hasher.finish() as u32;
+
+        // Calculate the register's index.
+        let index: usize = (hash >> (32 - self.precision)) as usize;
+
+        // Shift left the bits of the index.
+        hash = (hash << self.precision) | (1 << (self.precision - 1));
+
+        // Count leading zeros.
+        let zeros: u32 = 1 + hash.leading_zeros();
+
+        // Update the register with the max leading zeros counts.
+        self.registers.set_greater(index, zeros);
+    }
+
     #[inline] // Returns the precision of the HyperLogLogPF instance.
     fn precision(&self) -> u8 {
         self.precision
@@ -128,24 +163,16 @@ where
 {
     /// Adds a new value to the multiset.
     fn add(&mut self, value: &H) {
-        // Create a new hasher.
-        let mut hasher = self.builder.build_hasher();
-        // Calculate the hash.
-        value.hash(&mut hasher);
-        // Drops the higher 32 bits.
-        let mut hash: u32 = hasher.finish() as u32;
+        self.insert_impl(value);
+    }
 
-        // Calculate the register's index.
-        let index: usize = (hash >> (32 - self.precision)) as usize;
-
-        // Shift left the bits of the index.
-        hash = (hash << self.precision) | (1 << (self.precision - 1));
-
-        // Count leading zeros.
-        let zeros: u32 = 1 + hash.leading_zeros();
-
-        // Update the register with the max leading zeros counts.
-        self.registers.set_greater(index, zeros);
+    /// Inserts a new value to the multiset.
+    fn insert<Q>(&mut self, value: &Q)
+    where
+        H: Borrow<Q>,
+        Q: Hash + ?Sized,
+    {
+        self.insert_impl(value);
     }
 
     /// Estimates the cardinality of the multiset.
@@ -217,33 +244,33 @@ mod tests {
     }
 
     #[test]
-    fn test_add() {
+    fn test_insert() {
         let builder = PassThroughHasherBuilder {};
 
         let mut hll: HyperLogLogPF<u64, PassThroughHasherBuilder> =
             HyperLogLogPF::new(16, builder).unwrap();
 
-        hll.add(&0x0000000000010fff);
+        hll.insert(&0x0000000000010fff);
 
         assert_eq!(hll.registers.get(1), 5);
 
-        hll.add(&0x000000000002ffff);
+        hll.insert(&0x000000000002ffff);
 
         assert_eq!(hll.registers.get(2), 1);
 
-        hll.add(&0x0000000000030000);
+        hll.insert(&0x0000000000030000);
 
         assert_eq!(hll.registers.get(3), 17);
 
-        hll.add(&0x0000000000030001);
+        hll.insert(&0x0000000000030001);
 
         assert_eq!(hll.registers.get(3), 17);
 
-        hll.add(&0x00000000ff037000);
+        hll.insert(&0x00000000ff037000);
 
         assert_eq!(hll.registers.get(0xff03), 2);
 
-        hll.add(&0x00000000ff030800);
+        hll.insert(&0x00000000ff030800);
 
         assert_eq!(hll.registers.get(0xff03), 5);
 
@@ -252,13 +279,13 @@ mod tests {
         let mut hll: HyperLogLogPF<u64, PassThroughHasherBuilder> =
             HyperLogLogPF::new(4, builder).unwrap();
 
-        hll.add(&0x000000001fffffff);
+        hll.insert(&0x000000001fffffff);
         assert_eq!(hll.registers.get(1), 1);
 
-        hll.add(&0x00000000ffffffff);
+        hll.insert(&0x00000000ffffffff);
         assert_eq!(hll.registers.get(0xf), 1);
 
-        hll.add(&0x0000000000ffffff);
+        hll.insert(&0x0000000000ffffff);
         assert_eq!(hll.registers.get(0), 5);
     }
 
@@ -271,12 +298,12 @@ mod tests {
 
         assert_eq!(hll.count(), 0.0);
 
-        hll.add(&0x0000000000010fff);
-        hll.add(&0x0000000000020fff);
-        hll.add(&0x0000000000030fff);
-        hll.add(&0x0000000000040fff);
-        hll.add(&0x0000000000050fff);
-        hll.add(&0x0000000000050fff);
+        hll.insert(&0x0000000000010fff);
+        hll.insert(&0x0000000000020fff);
+        hll.insert(&0x0000000000030fff);
+        hll.insert(&0x0000000000040fff);
+        hll.insert(&0x0000000000050fff);
+        hll.insert(&0x0000000000050fff);
 
         assert_eq!(hll.count().trunc() as u64, 5);
     }
@@ -288,12 +315,12 @@ mod tests {
         let mut hll: HyperLogLogPF<u64, PassThroughHasherBuilder> =
             HyperLogLogPF::new(16, builder).unwrap();
 
-        hll.add(&0x00000000000101ff);
-        hll.add(&0x00000000000202ff);
-        hll.add(&0x00000000000304ff);
-        hll.add(&0x0000000000040fff);
-        hll.add(&0x0000000000050fff);
-        hll.add(&0x0000000000060fff);
+        hll.insert(&0x00000000000101ff);
+        hll.insert(&0x00000000000202ff);
+        hll.insert(&0x00000000000304ff);
+        hll.insert(&0x0000000000040fff);
+        hll.insert(&0x0000000000050fff);
+        hll.insert(&0x0000000000060fff);
 
         assert_eq!(hll.registers.get(1), 8);
         assert_eq!(hll.registers.get(2), 7);
@@ -317,9 +344,9 @@ mod tests {
         let mut other: HyperLogLogPF<u64, PassThroughHasherBuilder> =
             HyperLogLogPF::new(16, builder).unwrap();
 
-        hll.add(&0x00000000000404ff);
-        hll.add(&0x00000000000502ff);
-        hll.add(&0x00000000000601ff);
+        hll.insert(&0x00000000000404ff);
+        hll.insert(&0x00000000000502ff);
+        hll.insert(&0x00000000000601ff);
 
         assert_eq!(other.merge(&hll), Ok(()));
 
@@ -340,12 +367,12 @@ mod tests {
         let mut hll: HyperLogLogPF<u64, PassThroughHasherBuilder> =
             HyperLogLogPF::new(16, builder).unwrap();
 
-        hll.add(&0x0000000000010fff);
-        hll.add(&0x0000000000020fff);
-        hll.add(&0x0000000000030fff);
-        hll.add(&0x0000000000040fff);
-        hll.add(&0x0000000000050fff);
-        hll.add(&0x0000000000050fff);
+        hll.insert(&0x0000000000010fff);
+        hll.insert(&0x0000000000020fff);
+        hll.insert(&0x0000000000030fff);
+        hll.insert(&0x0000000000040fff);
+        hll.insert(&0x0000000000050fff);
+        hll.insert(&0x0000000000050fff);
 
         assert_eq!(hll.count().trunc() as usize, 5);
 
@@ -356,19 +383,19 @@ mod tests {
 
         assert_eq!(deserialized.count().trunc() as usize, 5);
 
-        deserialized.add(&0x0000000000060fff);
+        deserialized.insert(&0x0000000000060fff);
 
         assert_eq!(deserialized.count().trunc() as usize, 6);
 
         let mut hll: HyperLogLogPF<u64, DefaultBuildHasher> =
             HyperLogLogPF::new(16, DefaultBuildHasher {}).unwrap();
 
-        hll.add(&0x0000000000010fff);
-        hll.add(&0x0000000000020fff);
-        hll.add(&0x0000000000030fff);
-        hll.add(&0x0000000000040fff);
-        hll.add(&0x0000000000050fff);
-        hll.add(&0x0000000000050fff);
+        hll.insert(&0x0000000000010fff);
+        hll.insert(&0x0000000000020fff);
+        hll.insert(&0x0000000000030fff);
+        hll.insert(&0x0000000000040fff);
+        hll.insert(&0x0000000000050fff);
+        hll.insert(&0x0000000000050fff);
 
         assert_eq!(hll.count().trunc() as usize, 5);
 
@@ -379,7 +406,7 @@ mod tests {
 
         assert_eq!(deserialized.count().trunc() as usize, 5);
 
-        deserialized.add(&0x0000000000060fff);
+        deserialized.insert(&0x0000000000060fff);
 
         assert_eq!(deserialized.count().trunc() as usize, 6);
     }
@@ -393,7 +420,7 @@ mod tests {
         use test::{black_box, Bencher};
 
         #[bench]
-        fn bench_add(b: &mut Bencher) {
+        fn bench_insert(b: &mut Bencher) {
             let builder = PassThroughHasherBuilder {};
 
             let mut hll: HyperLogLogPF<u64, PassThroughHasherBuilder> =
@@ -401,13 +428,13 @@ mod tests {
 
             b.iter(|| {
                 for i in 0u64..1000 {
-                    hll.add(&(u64::max_value() - i));
+                    hll.insert(&(u64::max_value() - i));
                 }
             })
         }
 
         #[bench]
-        fn bench_add_with_hash(b: &mut Bencher) {
+        fn bench_insert_with_hash(b: &mut Bencher) {
             let mut rng = rand::thread_rng();
 
             let workload: Vec<String> = (0..2000)
@@ -421,7 +448,7 @@ mod tests {
                     HyperLogLogPF::new(16, DefaultBuildHasher {}).unwrap();
 
                 for val in &workload {
-                    hll.add(&val);
+                    hll.insert(&val);
                 }
 
                 let val = hll.count();
@@ -438,7 +465,7 @@ mod tests {
                 HyperLogLogPF::new(16, builder).unwrap();
 
             for i in 0u64..10000 {
-                hll.add(&(u64::max_value() - i));
+                hll.insert(&(u64::max_value() - i));
             }
 
             b.iter(|| {

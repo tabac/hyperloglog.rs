@@ -31,6 +31,7 @@ mod hyperloglogplus;
 #[cfg(not(feature = "std"))]
 mod log;
 
+use core::borrow::Borrow;
 use core::fmt;
 use core::hash::Hash;
 
@@ -44,7 +45,15 @@ pub use crate::hyperloglogplus::HyperLogLogPlus;
 /// A trait that should be implemented by any HyperLogLog variant.
 pub trait HyperLogLog<H: Hash + ?Sized> {
     /// Adds a new value to the multiset.
+    #[deprecated(since = "0.3.0", note = "use insert() function instead.")]
     fn add(&mut self, value: &H);
+
+    /// Inserts a new value to the multiset.
+    fn insert<Q>(&mut self, value: &Q)
+    where
+        H: Borrow<Q>,
+        Q: Hash + ?Sized;
+
     /// Estimates the cardinality of the multiset.
     fn count(&mut self) -> f64;
 }
