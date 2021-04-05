@@ -181,6 +181,59 @@ where
         Ok(())
     }
 
+    /// Inserts a new value, of any type, to the multiset.
+    pub fn insert_any<R>(&mut self, value: &R)
+    where
+        R: Hash + ?Sized,
+    {
+        self.insert_impl(value);
+    }
+
+    #[inline(always)]
+    fn insert_impl<R>(&mut self, value: &R)
+    where
+        R: Hash + ?Sized,
+    {
+        // Create a new hasher.
+        let mut hasher = self.builder.build_hasher();
+        // Calculate the hash.
+        value.hash(&mut hasher);
+        // Use a 64-bit hash value.
+        let mut hash: u64 = hasher.finish();
+
+        match &mut self.registers {
+            Some(registers) => {
+                // We use normal representation.
+
+                // Calculate the register's index.
+                let index: usize = (hash >> (64 - self.precision)) as usize;
+
+                // Shift left the bits of the index.
+                hash = (hash << self.precision) | (1 << (self.precision - 1));
+
+                // Count leading zeros.
+                let zeros: u32 = 1 + hash.leading_zeros();
+
+                // Update the register with the max leading zeros counts.
+                registers.set_greater(index, zeros);
+            },
+            None => {
+                // We use sparse representation.
+
+                // Encode hash value.
+                let hash_code = self.encode_hash(hash);
+
+                // Insert hash_code into temporary set.
+                self.tmpset.insert(hash_code);
+
+                // Merge temporary set into sparse representation.
+                if self.tmpset.len() * 100 > self.counts.2 {
+                    self.merge_sparse()
+                }
+            },
+        }
+    }
+
     #[inline] // Returns the precision of the HyperLogLogPF instance.
     fn precision(&self) -> u8 {
         self.precision
@@ -401,44 +454,7 @@ where
 {
     /// Adds a new value to the multiset.
     fn add(&mut self, value: &H) {
-        // Create a new hasher.
-        let mut hasher = self.builder.build_hasher();
-        // Calculate the hash.
-        value.hash(&mut hasher);
-        // Use a 64-bit hash value.
-        let mut hash: u64 = hasher.finish();
-
-        match &mut self.registers {
-            Some(registers) => {
-                // We use normal representation.
-
-                // Calculate the register's index.
-                let index: usize = (hash >> (64 - self.precision)) as usize;
-
-                // Shift left the bits of the index.
-                hash = (hash << self.precision) | (1 << (self.precision - 1));
-
-                // Count leading zeros.
-                let zeros: u32 = 1 + hash.leading_zeros();
-
-                // Update the register with the max leading zeros counts.
-                registers.set_greater(index, zeros);
-            },
-            None => {
-                // We use sparse representation.
-
-                // Encode hash value.
-                let hash_code = self.encode_hash(hash);
-
-                // Insert hash_code into temporary set.
-                self.tmpset.insert(hash_code);
-
-                // Merge temporary set into sparse representation.
-                if self.tmpset.len() * 100 > self.counts.2 {
-                    self.merge_sparse()
-                }
-            },
-        }
+        self.insert_impl(value);
     }
 
     /// Inserts a new value to the multiset.
@@ -447,44 +463,7 @@ where
         H: Borrow<Q>,
         Q: Hash + ?Sized,
     {
-        // Create a new hasher.
-        let mut hasher = self.builder.build_hasher();
-        // Calculate the hash.
-        value.hash(&mut hasher);
-        // Use a 64-bit hash value.
-        let mut hash: u64 = hasher.finish();
-
-        match &mut self.registers {
-            Some(registers) => {
-                // We use normal representation.
-
-                // Calculate the register's index.
-                let index: usize = (hash >> (64 - self.precision)) as usize;
-
-                // Shift left the bits of the index.
-                hash = (hash << self.precision) | (1 << (self.precision - 1));
-
-                // Count leading zeros.
-                let zeros: u32 = 1 + hash.leading_zeros();
-
-                // Update the register with the max leading zeros counts.
-                registers.set_greater(index, zeros);
-            },
-            None => {
-                // We use sparse representation.
-
-                // Encode hash value.
-                let hash_code = self.encode_hash(hash);
-
-                // Insert hash_code into temporary set.
-                self.tmpset.insert(hash_code);
-
-                // Merge temporary set into sparse representation.
-                if self.tmpset.len() * 100 > self.counts.2 {
-                    self.merge_sparse()
-                }
-            },
-        }
+        self.insert_impl(value);
     }
 
     /// Estimates the cardinality of the multiset.

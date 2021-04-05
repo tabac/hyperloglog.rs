@@ -45,10 +45,7 @@ pub use crate::hyperloglogplus::HyperLogLogPlus;
 /// A trait that should be implemented by any HyperLogLog variant.
 pub trait HyperLogLog<H: Hash + ?Sized> {
     /// Adds a new value to the multiset.
-    #[deprecated(
-        since = "0.3.0",
-        note = "Please use the insert function instead."
-    )]
+    #[deprecated(since = "0.3.0", note = "use insert() function instead.")]
     fn add(&mut self, value: &H);
 
     /// Inserts a new value to the multiset.

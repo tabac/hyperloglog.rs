@@ -105,6 +105,39 @@ where
         Ok(())
     }
 
+    /// Inserts a new value, of any type, to the multiset.
+    pub fn insert_any<R>(&mut self, value: &R)
+    where
+        R: Hash + ?Sized,
+    {
+        self.insert_impl(value);
+    }
+
+    #[inline(always)] // Inserts a new value to the multiset.
+    fn insert_impl<R>(&mut self, value: &R)
+    where
+        R: Hash + ?Sized,
+    {
+        // Create a new hasher.
+        let mut hasher = self.builder.build_hasher();
+        // Calculate the hash.
+        value.hash(&mut hasher);
+        // Drops the higher 32 bits.
+        let mut hash: u32 = hasher.finish() as u32;
+
+        // Calculate the register's index.
+        let index: usize = (hash >> (32 - self.precision)) as usize;
+
+        // Shift left the bits of the index.
+        hash = (hash << self.precision) | (1 << (self.precision - 1));
+
+        // Count leading zeros.
+        let zeros: u32 = 1 + hash.leading_zeros();
+
+        // Update the register with the max leading zeros counts.
+        self.registers.set_greater(index, zeros);
+    }
+
     #[inline] // Returns the precision of the HyperLogLogPF instance.
     fn precision(&self) -> u8 {
         self.precision
@@ -130,24 +163,7 @@ where
 {
     /// Adds a new value to the multiset.
     fn add(&mut self, value: &H) {
-        // Create a new hasher.
-        let mut hasher = self.builder.build_hasher();
-        // Calculate the hash.
-        value.hash(&mut hasher);
-        // Drops the higher 32 bits.
-        let mut hash: u32 = hasher.finish() as u32;
-
-        // Calculate the register's index.
-        let index: usize = (hash >> (32 - self.precision)) as usize;
-
-        // Shift left the bits of the index.
-        hash = (hash << self.precision) | (1 << (self.precision - 1));
-
-        // Count leading zeros.
-        let zeros: u32 = 1 + hash.leading_zeros();
-
-        // Update the register with the max leading zeros counts.
-        self.registers.set_greater(index, zeros);
+        self.insert_impl(value);
     }
 
     /// Inserts a new value to the multiset.
@@ -156,24 +172,7 @@ where
         H: Borrow<Q>,
         Q: Hash + ?Sized,
     {
-        // Create a new hasher.
-        let mut hasher = self.builder.build_hasher();
-        // Calculate the hash.
-        value.hash(&mut hasher);
-        // Drops the higher 32 bits.
-        let mut hash: u32 = hasher.finish() as u32;
-
-        // Calculate the register's index.
-        let index: usize = (hash >> (32 - self.precision)) as usize;
-
-        // Shift left the bits of the index.
-        hash = (hash << self.precision) | (1 << (self.precision - 1));
-
-        // Count leading zeros.
-        let zeros: u32 = 1 + hash.leading_zeros();
-
-        // Update the register with the max leading zeros counts.
-        self.registers.set_greater(index, zeros);
+        self.insert_impl(value);
     }
 
     /// Estimates the cardinality of the multiset.
