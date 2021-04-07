@@ -39,10 +39,11 @@ A simple example using HyperLogLog++ implementation:
 use std::collections::hash_map::RandomState;
 use hyperloglogplus::{HyperLogLog, HyperLogLogPlus};
 
-let mut hllp = HyperLogLogPlus::new(16, RandomState::new()).unwrap();
+let mut hllp: HyperLogLogPlus<u32, _> =
+    HyperLogLogPlus::new(16, RandomState::new()).unwrap();
 
-hllp.add(&12345);
-hllp.add(&23456);
+hllp.insert(&12345);
+hllp.insert(&23456);
 
 assert_eq!(hllp.count().trunc() as u32, 2);
 
