@@ -68,11 +68,13 @@ impl fmt::Display for HyperLogLogError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             HyperLogLogError::InvalidPrecision => {
-                "precision is out of bounds.".fmt(f)
+                "precision is out of bounds".fmt(f)
             },
             HyperLogLogError::IncompatiblePrecision => {
-                "precisions must be equal.".fmt(f)
+                "precisions must be equal".fmt(f)
             },
         }
     }
 }
+
+impl std::error::Error for HyperLogLogError {}
