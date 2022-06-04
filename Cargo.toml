@@ -1,6 +1,6 @@
 [package]
 name = "hyperloglogplus"
-version = "0.4.0"
+version = "0.4.1"
 authors = ["Tasos Bakogiannis <t.bakogiannis@gmail.com>"]
 description = "HyperLogLog implementations."
 homepage = "https://github.com/tabac/hyperloglog.rs"
