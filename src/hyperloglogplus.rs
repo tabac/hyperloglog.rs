@@ -54,6 +54,7 @@ use crate::HyperLogLogError;
 ///   Nunkesser and Alexander Hall.](https://goo.gl/iU8Ig)
 ///
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 pub struct HyperLogLogPlus<H, B>
 where
     H: Hash + ?Sized,
@@ -534,6 +535,7 @@ mod tests {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{BuildHasher, Hasher};
 
+    #[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
     struct PassThroughHasher(u64);
 
     impl Hasher for PassThroughHasher {
@@ -552,6 +554,7 @@ mod tests {
     }
 
     #[derive(Serialize, Deserialize)]
+    #[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
     struct PassThroughHasherBuilder;
 
     impl BuildHasher for PassThroughHasherBuilder {
@@ -563,6 +566,7 @@ mod tests {
     }
 
     #[derive(Serialize, Deserialize)]
+    #[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
     struct DefaultBuildHasher;
 
     impl BuildHasher for DefaultBuildHasher {

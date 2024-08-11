@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 // A Vector of bytes containing variable length encoded unsigned integers.
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 pub struct VarIntVec(Vec<u8>);
 
 // A Vector containing difference encoded unsigned integers
@@ -10,6 +11,7 @@ pub struct VarIntVec(Vec<u8>);
 // Numbers stored are assumed to be in increasing order, hence the
 // difference between a new number and `last` will always be positive.
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 pub struct DifIntVec {
     // The count of numbers stored.
     count: usize,
@@ -19,11 +21,13 @@ pub struct DifIntVec {
     buf:   VarIntVec,
 }
 
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 pub struct VarIntVecIntoIter<'a> {
     index: usize,
     inner: &'a VarIntVec,
 }
 
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 pub struct DifIntVecIntoIter<'a> {
     index: usize,
     last:  u32,

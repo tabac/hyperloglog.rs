@@ -8,6 +8,10 @@ macro_rules! registers_impls {
     ($len:expr, $ident:ident) => {
         // A Registers struct.
         #[derive(Clone, Debug, Serialize, Deserialize)]
+        #[cfg_attr(
+            feature = "mem_dbg",
+            derive(mem_dbg::MemDbg, mem_dbg::MemSize)
+        )]
         pub struct $ident {
             // A buffer containing registers.
             buf:   Vec<u32>,

@@ -12,6 +12,7 @@ use rayon::prelude::*;
 
 use hyperloglogplus::{HyperLogLog, HyperLogLogPF, HyperLogLogPlus};
 
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 struct PassThroughHasher(u64);
 
 impl Hasher for PassThroughHasher {
@@ -30,6 +31,7 @@ impl Hasher for PassThroughHasher {
     }
 }
 
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 struct PassThroughHasherBuilder;
 
 impl BuildHasher for PassThroughHasherBuilder {
@@ -40,6 +42,7 @@ impl BuildHasher for PassThroughHasherBuilder {
     }
 }
 
+#[cfg_attr(feature = "mem_dbg", derive(mem_dbg::MemDbg, mem_dbg::MemSize))]
 struct Estimation(u64, u64);
 
 impl fmt::Display for Estimation {
