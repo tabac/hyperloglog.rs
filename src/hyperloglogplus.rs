@@ -53,7 +53,7 @@ use crate::HyperLogLogError;
 ///   of the Art Cardinality Estimation Algorithm", Stefan Heule, Marc
 ///   Nunkesser and Alexander Hall.](https://goo.gl/iU8Ig)
 ///
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct HyperLogLogPlus<H, B>
 where
     H: Hash + ?Sized,
@@ -66,6 +66,24 @@ where
     sparse:    DifIntVec,
     registers: Option<RegistersPlus>,
     phantom:   PhantomData<H>,
+}
+
+impl<H, B> Clone for HyperLogLogPlus<H, B> 
+where
+    H: Hash + ?Sized,
+    B: BuildHasher + Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            builder:   self.builder.clone(),
+            precision: self.precision,
+            counts:    self.counts,
+            tmpset:    self.tmpset.clone(),
+            sparse:    self.sparse.clone(),
+            registers: self.registers.clone(),
+            phantom:   self.phantom,
+        }
+    }
 }
 
 impl<H, B> HyperLogLogPlus<H, B>
