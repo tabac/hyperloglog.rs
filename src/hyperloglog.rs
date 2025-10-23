@@ -41,7 +41,7 @@ use crate::HyperLogLogError;
 ///   algorithm", Philippe Flajolet, Éric Fusy, Olivier Gandouet and Frédéric
 ///   Meunier.](http://algo.inria.fr/flajolet/Publications/FlFuGaMe07.pdf)
 ///
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct HyperLogLogPF<H, B>
 where
     H: Hash + ?Sized,
@@ -52,6 +52,22 @@ where
     precision: u8,
     registers: Registers,
     phantom:   PhantomData<H>,
+}
+
+impl<H, B> Clone for HyperLogLogPF<H, B> 
+where
+    H: Hash + ?Sized,
+    B: BuildHasher + Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            builder:   self.builder.clone(),
+            count:     self.count,
+            precision: self.precision,
+            registers: self.registers.clone(),
+            phantom:   self.phantom,
+        }
+    }
 }
 
 impl<H, B> HyperLogLogPF<H, B>
